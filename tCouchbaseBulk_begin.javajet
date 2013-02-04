@@ -1,0 +1,62 @@
+<%@ jet imports="
+java.util.ArrayList
+java.io.File
+org.talend.core.model.process.INode
+org.talend.core.model.process.ElementParameterParser
+org.talend.core.model.metadata.IMetadataTable
+org.talend.core.model.metadata.IMetadataColumn
+org.talend.core.model.process.IConnection
+org.talend.core.model.process.IConnectionCategory
+org.talend.designer.codegen.config.CodeGeneratorArgument
+org.talend.core.model.metadata.types.JavaTypesManager
+org.talend.core.model.metadata.types.JavaType"
+%>
+
+<%
+
+final int BATCH = 1000;
+
+CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
+INode node = (INode)codeGenArgument.getArgument();
+String cid = node.getUniqueName();
+String connection = ElementParameterParser.getValue(node, "__CONNECTION__");
+
+int batch;
+try {
+	batch = Integer.parseInt(ElementParameterParser.getValue(node, "__BATCH__"));
+} catch (NumberFormatException e) {
+	System.out.println("unable to parse batch size: use default value = " + BATCH);
+	batch = BATCH;
+}
+String path = ElementParameterParser.getValue(node, "__PATH__");
+
+
+%>
+
+int batch_<%=cid %> = <%=batch%>;
+String path_<%=cid %> = <%=path%>;
+int numError_<%=cid %> = 0;
+int numSuccess_<%=cid %> = 0;
+int expiration_<%=cid %> = 3600;
+int nb_line_<%=cid%> = 0;
+
+java.io.File file_<%=cid %> = new java.io.File(path_<%=cid %>);
+java.util.ArrayList<java.io.File> files_<%=cid %> = new java.util.ArrayList<java.io.File>();
+
+if (file_<%=cid %>.isDirectory()) {
+	try {
+		java.io.File[] fileArr = file_<%=cid %>.listFiles();
+		if (fileArr != null) {
+			files_<%=cid %>.addAll(java.util.Arrays.asList(fileArr));
+    	}
+	} catch (SecurityException e) {
+		System.err.println(e);
+	}
+	System.out.println("number of files in " + path_<%=cid %> + " = " + files_<%=cid %>.size()); 
+}
+
+com.couchbase.client.CouchbaseClient couchbaseClient_<%=cid%>
+	= (com.couchbase.client.CouchbaseClient) globalMap.get("couchbase_<%=connection %>");
+
+java.util.ArrayList<net.spy.memcached.internal.OperationFuture<Boolean>> results_<%=cid %>
+	= new java.util.ArrayList<net.spy.memcached.internal.OperationFuture<Boolean>>(batch_<%=cid %>);

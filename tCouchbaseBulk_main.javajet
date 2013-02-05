@@ -28,21 +28,28 @@ if ((node.getIncomingConnections() != null) && (node.getIncomingConnections().si
 for (java.io.File file : files_<%=cid%>) {
 	String key_<%=cid %> = file.getAbsolutePath();
 
+	try {
+		java.security.MessageDigest md5 = java.security.MessageDigest.getInstance("MD5");
+		md5.update(key_<%=cid %>.getBytes());
+		java.math.BigInteger hash = new java.math.BigInteger(1, md5.digest());
+		key_<%=cid %> = hash.toString(16);
+	} catch (java.security.NoSuchAlgorithmException ex) {
+		System.err.println(ex);
+	}
+
 	StringBuilder contents = new StringBuilder();
     try {
         java.io.BufferedReader input =  new java.io.BufferedReader(new java.io.FileReader(file));
         try {
           String line = null;
-
           while (( line = input.readLine()) != null){
               contents.append(line);
               contents.append(System.getProperty("line.separator"));
           }
         } finally {
-        input.close();
+			input.close();
         }
-    }
-    catch (IOException ex){
+    } catch (IOException ex) {
         ++numError_<%=cid %>;
         ex.printStackTrace();
         continue;
